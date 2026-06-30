@@ -96,6 +96,7 @@ mod tests {
             amount_out: U256::from(amount_out),
             amount_out_net_gas: U256::from(net),
             gas_estimate: U256::from(21_000),
+            quote_json: None,
         })
     }
 
@@ -137,14 +138,6 @@ mod tests {
     }
 
     #[test]
-    fn verdict_unsolvable_passthrough() {
-        assert_eq!(
-            verdict(&Outcome::Unsolvable("missing token".into()), U256::from(10_000u64)),
-            Verdict::Unsolvable
-        );
-    }
-
-    #[test]
     fn served_reclassifies_partial_fill_as_unsolvable() {
         // Fynd produced only 40% of the settled output → coverage miss, not a loss.
         assert!(matches!(served(solved(400, 390), U256::from(1_000u64)), Outcome::Unsolvable(_)));
@@ -152,8 +145,9 @@ mod tests {
 
     #[test]
     fn served_keeps_adequate_fill() {
-        // 90% fill is a real (worse) quote, not a coverage miss; the floor is kept.
+        // 90% fill is a real (worse) quote, not a coverage miss.
         assert!(matches!(served(solved(900, 880), U256::from(1_000u64)), Outcome::Solved(_)));
+        // Exactly at the floor is kept.
         assert!(matches!(served(solved(500, 490), U256::from(1_000u64)), Outcome::Solved(_)));
     }
 
@@ -163,6 +157,15 @@ mod tests {
             served(Outcome::Unsolvable("x".into()), U256::from(1_000u64)),
             Outcome::Unsolvable(_)
         ));
+        // Zero settled can't form a ratio → leave the outcome untouched.
         assert!(matches!(served(solved(1, 1), U256::ZERO), Outcome::Solved(_)));
+    }
+
+    #[test]
+    fn verdict_unsolvable_passthrough() {
+        assert_eq!(
+            verdict(&Outcome::Unsolvable("missing token".into()), U256::from(10_000u64)),
+            Verdict::Unsolvable
+        );
     }
 }

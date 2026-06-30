@@ -61,7 +61,27 @@ hindsight resolve --rpc-url "$ETH_RPC_URL" --range 21000000-21000005 --metrics-p
 ```
 
 Output is a terminal win/loss summary, or structured data with `--json`. This compares at the
-chain's current state.
+chain's current state; for the top/back range use `monitor`.
+
+### `monitor` — live two-state monitoring
+
+Drives an **in-process** Fynd solver one block at a time via `BlockStepController`, re-solving each
+block's settled trades at **top-of-block** (state N-1, optimistic) and **back-of-block** (state N,
+pessimistic) and recording both as a range. The back-of-block solve waits on a deterministic
+barrier (the solver's applied block advancing) before reading state N.
+
+```bash
+hindsight monitor \
+  --rpc-url "$ETH_RPC_URL" \
+  --tycho-url "$TYCHO_URL" \
+  --tycho-api-key "$TYCHO_API_KEY" \
+  --protocols uniswap_v2,uniswap_v3 \
+  --min-tvl 100 \
+  --metrics-port 9899
+```
+
+Building the solver loads tokens from Tycho and can take minutes before the first block is
+processed. `--max-blocks N` stops after N blocks (otherwise it runs until interrupted).
 
 ## Configuration
 
